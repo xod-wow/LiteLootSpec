@@ -11,8 +11,8 @@ local defaults = {
 }
 
 function me:PLAYER_LOGIN()
-    AutoLootSpecSwapDB = AutoLootSpecSwapDB or CopyTable(defaults)
-    self.db = AutoLootSpecSwapDB
+    LiteLootSpecDB = LiteLootSpecDB or CopyTable(defaults)
+    self.db = LiteLootSpecDB
 
     self:RegisterEvent("PLAYER_TARGET_CHANGED")
 end
@@ -26,14 +26,14 @@ function me:PLAYER_TARGET_CHANGED()
     local newSpec = self.db.specByNPC[npcid]
     if newSpec then
         SetLootSpecialization(newSpec)
-        print("AutoLootSpecSwap: CHANGED LOOT SPEC TO " .. tostring(newSpec))
+        print("LiteLootSpec: CHANGED LOOT SPEC TO " .. tostring(newSpec))
     end
 end
 
 function me:SlashCommandHandler(cmd)
-    print("AutoLootSpecSwap: Usage:\n/llss")
+    print("LiteLootSpec: Usage:\n/ls")
     return true
 end
 
-SlashCmdList["AUTOLOOTSPECSWAP"] = function (arg) me:SlashCommandHandler(arg) end
-SLASH_AUTOLOOTSPECSWAP1 = "/llss"
+SlashCmdList["LiteLootSpec"] = function (arg) me:SlashCommandHandler(arg) end
+SLASH_LiteLootSpec1 = "/ls"
