@@ -1,0 +1,8 @@
+## Interface: 80000
+## Title: LiteLootSpec
+## Version: @project-version@
+## Author: Xodiv-Nagrand
+## Email: mib@post.com
+## SavedVariables: LiteLootSpecDB
+
+LiteLootSpec.lua
