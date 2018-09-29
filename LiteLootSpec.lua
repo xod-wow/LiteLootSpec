@@ -25,8 +25,8 @@ local function GetLootSpecText(n)
         local _, name = GetSpecializationInfo(specIndex, nil, nil, nil, sex);
         return format(LOOT_SPECIALIZATION_DEFAULT, name);
     else
-        local _, name = GetSpecializationInfoByID(n, nil, nil, nil, sex)
-        return name
+        local _, name = GetSpecializationInfoByID(n, sex)
+        return name or UNKNOWn
     end
 end
 
