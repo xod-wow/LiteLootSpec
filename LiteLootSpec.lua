@@ -4,7 +4,10 @@
 
 LiteLootSpec = CreateFrame('Frame')
 LiteLootSpec:RegisterEvent('PLAYER_LOGIN')
-LiteLootSpec:SetScript('OnEvent', function (self, e, ...) if self[e] then self[e](self, e, ...) end end)
+LiteLootSpec:SetScript('OnEvent',
+    function (self, e, ...)
+        if self[e] then self[e](self, e, ...) end
+    end)
 
 local defaults = {
     specByNPC = { },
@@ -15,39 +18,42 @@ local function GetUnitNPCID(unit)
     if guid then return guid:sub(-17, -12) end
 end
 
-local function GetLootSpecText(i)
+local function GetLootSpecText(n)
     local sex = UnitSex("player");
-    if i == 0 then
+    if n == 0 then
         local specIndex = GetSpecialization()
         local _, name = GetSpecializationInfo(specIndex, nil, nil, nil, sex);
         return format(LOOT_SPECIALIZATION_DEFAULT, name);
     else
-        local _, name = GetSpecializationInfo(i, nil, nil, nil, sex)
+        local _, name = GetSpecializationInfoByID(n, nil, nil, nil, sex)
         return name
     end
 end
 
 function LiteLootSpec:Print(...)
     local txt = format(...)
-    print('LiteLootSpec: ' .. txt)
+    print('|cff00ff00LiteLootSpec:|r ' .. txt)
 end
 
-function LiteLootSpec:ApplySpec()
-    if InCombatLockdown() then return end
+function LiteLootSpec:ApplyWantedSpec()
+    if InCombatLockdown() or GetNumSpecializations() == 0 then
+        return
+    end
+
+    local curSpec = GetSpecializationInfo(GetSpecialization())
+    local curLootSpec = GetLootSpecialization() or 0
 
     local wantedLootSpec = self.wantedLootSpec or self.userSetLootSpec or 0
-    local newLootSpecID = GetSpecializationInfo(wantedLootSpec) or 0
-    local curLootSpecID = GetLootSpecialization() or 0
 
-    if newLootSpecID == curLootSpecID then
+    if wantedLootSpec == curLootSpec then
         return
     end
 
-    if wantedLootSpec == GetSpecialization() and curLootSpecID == 0 then
+    if curLootSpec == 0 and wantedLootSpec == curSpec then
         return
     end
 
-    SetLootSpecialization(newLootSpecID)
+    SetLootSpecialization(wantedLootSpec)
     self:Print('Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
 end
 
@@ -55,34 +61,30 @@ function LiteLootSpec:PLAYER_LOGIN()
     LiteLootSpecDB = LiteLootSpecDB or CopyTable(defaults)
     self.db = LiteLootSpecDB
     self.wantedLootSpec = nil
+    -- Is this necessary? PLAYER_LOOT_SPEC_UPDATED is probably fired early
     self.userSetLootSpec = GetLootSpecialization()
     self:RegisterEvent('PLAYER_TARGET_CHANGED')
     self:RegisterEvent('PLAYER_LOOT_SPEC_UPDATED')
     self:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
-    self:RegisterEvent('PLAYER_REGEN_ENABLED')
 end
 
 function LiteLootSpec:PLAYER_TARGET_CHANGED()
-    local npcid = GetUnitNPCID('target')
+    local npcID = GetUnitNPCID('target')
 
-    if not npcid then return end
+    -- Really want to check that the target is meaningful here
 
-    if self.db.specByNPC[npcid] then
-        self.wantedLootSpec = self.db.specByNPC[npcid]
-        if not UnitIsDead('target') then
-            self:ApplySpec()
-        else
-            self.wantedUnitDied = true
-        end
+    if not npcID or not self.db.specByNPC[npcID] then return end
+
+    if UnitIsDead('target') then
+        self.wantedLootSpec = nil
+    else
+        self.wantedLootSpec = self.db.specByNPC[npcID]
+        self:ApplyWantedSpec()
     end
 end
 
 function LiteLootSpec:PLAYER_SPECIALIZATION_CHANGED()
-    self:ApplySpec()
-end
-
-function LiteLootSpec:PLAYER_REGEN_ENABLED()
-    self:ApplySpec()
+    self:ApplyWantedSpec()
 end
 
 function LiteLootSpec:PLAYER_LOOT_SPEC_UPDATED()
@@ -92,13 +94,16 @@ end
 local function ParseSpecArg(arg)
     local n = tonumber(arg)
 
-    if n then return n end
+    if n then
+        local spec = GetSpecializationInfo(n)
+        return spec
+    end
 
     local pattern = '^' .. arg:lower()
     for i = 1, GetNumSpecializations() do
-        local _, specName = GetSpecializationInfo(i)
+        local spec, specName = GetSpecializationInfo(i)
         if specName:lower():match(pattern) then
-            return i
+            return spec
         end
     end
 end
@@ -128,7 +133,7 @@ function LiteLootSpec:SlashCommandHandler(argstr)
             spec = ParseSpecArg(arg1)
         end
         if npc and spec then
-            self:Print('LiteLootSpec: saving spec %s for npc %d', GetLootSpecText(spec), npc)
+            self:Print('Setting spec %s for npc %d', GetLootSpecText(spec), npc)
             self.db.specByNPC[npc] = spec
         end
     elseif cmd == 'wipe' then
@@ -144,8 +149,8 @@ function LiteLootSpec:SlashCommandHandler(argstr)
     return true
 end
 
+SLASH_LiteLootSpec1 = '/ls'
 SlashCmdList['LiteLootSpec'] =
     function (arg)
         LiteLootSpec:SlashCommandHandler(arg)
     end
-SLASH_LiteLootSpec1 = '/ls'
