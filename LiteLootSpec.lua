@@ -27,6 +27,11 @@ local function GetLootSpecText(i)
     end
 end
 
+function LiteLootSpec:Print(...)
+    local txt = format(...)
+    print('LiteLootSpec: ' .. txt)
+end
+
 function LiteLootSpec:ApplySpec()
     if InCombatLockdown() then return end
 
@@ -43,7 +48,7 @@ function LiteLootSpec:ApplySpec()
     end
 
     SetLootSpecialization(newLootSpecID)
-    print('LiteLootSpec: Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
+    self:Print('Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
@@ -102,16 +107,16 @@ function LiteLootSpec:SlashCommandHandler(argstr)
     local cmd, arg1, arg2 = strsplit(' ', strlower(argstr))
     if cmd == 'list' then
         for npc, spec in pairs(self.db.specByNPC) do
-            print(format('LiteLootSpec: %s -> %d (%s)', npc, spec, GetLootSpecText(spec)))
+            self:Print('%s -> %d (%s)', npc, spec, GetLootSpecText(spec))
         end
     elseif cmd == 'target' then
         local npc = GetUnitNPCID('target')
-        print(format('LiteLootSpec: target npc = %s', npc))
+        self:Print('LiteLootSpec: target npc = %s', npc)
     elseif cmd == 'clear' then
         local npc = arg1 or GetUnitNPCID('target')
         if npc then
             self.db.specByNPC[npc] = nil
-            print(format('LiteLootSpec: clearing spec for npc %d', npc))
+            self:Print('LiteLootSpec: clearing spec for npc %d', npc)
         end
     elseif cmd == 'set' then
         local npc, spec
@@ -123,18 +128,18 @@ function LiteLootSpec:SlashCommandHandler(argstr)
             spec = ParseSpecArg(arg1)
         end
         if npc and spec then
-            print(format('LiteLootSpec: saving spec %s for npc %d', GetLootSpecText(spec), npc))
+            self:Print('LiteLootSpec: saving spec %s for npc %d', GetLootSpecText(spec), npc)
             self.db.specByNPC[npc] = spec
         end
     elseif cmd == 'wipe' then
         wipe(self.db.specByNPC)
     else
-        print('LiteLootSpec: Usage:')
-        print('  /ls list')
-        print('  /ls set [<npcid>] <spec>')
-        print('  /ls clear [<npcid>]')
-        print('  /ls wipe')
-        print('  /ls target')
+        self:Print('Usage:')
+        self:Print('  /ls list')
+        self:Print('  /ls set [<npcid>] <spec>')
+        self:Print('  /ls clear [<npcid>]')
+        self:Print('  /ls wipe')
+        self:Print('  /ls target')
     end
     return true
 end
