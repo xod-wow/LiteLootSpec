@@ -24,9 +24,11 @@ local function GetLootSpecText(n)
         local specIndex = GetSpecialization()
         local _, name = GetSpecializationInfo(specIndex, nil, nil, nil, sex);
         return format(LOOT_SPECIALIZATION_DEFAULT, name);
+    elseif n == nil then
+        return NONE
     else
         local _, name = GetSpecializationInfoByID(n, sex)
-        return name or UNKNOWn
+        return name or UNKNOWN
     end
 end
 
@@ -95,8 +97,12 @@ local function ParseSpecArg(arg)
     local n = tonumber(arg)
 
     if n then
-        local spec = GetSpecializationInfo(n)
-        return spec
+        if n == 0 then
+            return 0
+        else
+            local spec = GetSpecializationInfo(n)
+            return spec
+        end
     end
 
     local pattern = '^' .. arg:lower()
@@ -116,7 +122,7 @@ function LiteLootSpec:SlashCommandHandler(argstr)
         end
     elseif cmd == 'target' then
         local npc = GetUnitNPCID('target')
-        self:Print('LiteLootSpec: target npc = %s', npc)
+        self:Print('LiteLootSpec: target npc = %s', tostring(npc))
     elseif cmd == 'clear' then
         local npc = arg1 or GetUnitNPCID('target')
         if npc then
@@ -132,7 +138,7 @@ function LiteLootSpec:SlashCommandHandler(argstr)
             npc = GetUnitNPCID('target')
             spec = ParseSpecArg(arg1)
         end
-        if npc and spec then
+        if npc then
             self:Print('Setting spec %s for npc %d', GetLootSpecText(spec), npc)
             self.db.specByNPC[npc] = spec
         end
