@@ -85,18 +85,22 @@ function LiteLootSpec:PLAYER_LOGIN()
 end
 
 function LiteLootSpec:PLAYER_TARGET_CHANGED()
-    local npcID = GetUnitNPCID('target')
-
     -- Really want to check that the target is meaningful here
-
-    if not npcID or not self.db.specByNPC[npcID] then return end
-
-    if UnitIsDead('target') then
-        self.wantedLootSpec = nil
-    else
-        self.wantedLootSpec = self.db.specByNPC[npcID]
-        self:ApplyWantedSpec()
+    if UnitIsDead('target') or UnitEffectiveLevel('target') > 0 then
+        return
     end
+
+    local npcID = GetUnitNPCID('target')
+    if not npcID then
+        return
+    end
+
+    if self.db.specByNPC[npcID] then
+        self.wantedLootSpec = self.db.specByNPC[npcID]
+    else
+        self.wantedLootSpec = nil
+    end
+    self:ApplyWantedSpec()
 end
 
 function LiteLootSpec:PLAYER_SPECIALIZATION_CHANGED()
