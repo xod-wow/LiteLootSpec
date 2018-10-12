@@ -33,8 +33,22 @@ local function GetLootSpecText(n)
 end
 
 function LiteLootSpec:Print(...)
+    local cur = DEFAULT_CHAT_FRAME
+    for i = 1,NUM_CHAT_WINDOWS do
+        local f = _G["ChatFrame"..i]
+        if f and f:IsVisible() then
+            cur = f
+            break
+        end
+    end
+
+    cur:AddMessage('|cff00ff00LiteLootSpec:|r ' .. format(...))
+end
+
+function LiteLootSpec:Message(...)
+    self:Print(...)
     local txt = format(...)
-    print('|cff00ff00LiteLootSpec:|r ' .. txt)
+    UIErrorsFrame:AddMessage(txt, 0.1, 1.0, 0.1)
 end
 
 function LiteLootSpec:ApplyWantedSpec()
@@ -56,7 +70,7 @@ function LiteLootSpec:ApplyWantedSpec()
     end
 
     SetLootSpecialization(wantedLootSpec)
-    self:Print('Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
+    self:Message('Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
