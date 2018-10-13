@@ -13,6 +13,13 @@ local defaults = {
     specByNPC = { },
 }
 
+-- God dammit Blizzard
+local function UnitDisplayName(unit)
+    local n, r = UnitFullName(unit)
+    r = r or select(2, UnitFullName("player"))
+    return format('%s-%s', n, r)
+end
+
 local function GetUnitNPCID(unit)
     local guid = UnitGUID(unit)
     if guid then return guid:sub(-17, -12) end
@@ -74,8 +81,12 @@ function LiteLootSpec:ApplyWantedSpec()
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
-    LiteLootSpecDB = LiteLootSpecDB or CopyTable(defaults)
-    self.db = LiteLootSpecDB
+    local key = format('%s-%s', UnitFullName('player'))
+    LiteLootSpecDB = LiteLootSpecDB or { }
+    LiteLootSpecDB[key] = LiteLootSpecDB[key] or  CopyTable(defaults)
+
+    self.db = LiteLootSpecDB[key]
+
     self.wantedLootSpec = nil
     -- Is this necessary? PLAYER_LOOT_SPEC_UPDATED is probably fired early
     self.userSetLootSpec = GetLootSpecialization()
