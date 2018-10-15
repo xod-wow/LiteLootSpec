@@ -69,7 +69,7 @@ function LiteLootSpec:Message(...)
 end
 
 function LiteLootSpec:ApplyWantedSpec()
-    if InCombatLockdown() or GetNumSpecializations() == 0 then
+    if GetNumSpecializations() == 0 then
         return
     end
 
