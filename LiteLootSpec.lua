@@ -86,6 +86,7 @@ function LiteLootSpec:ApplyWantedSpec()
         return
     end
 
+self:Print("C")
     SetLootSpecialization(wantedLootSpec)
     self:Message('Changing loot spec to ' .. GetLootSpecText(wantedLootSpec))
 end
@@ -113,18 +114,14 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
         return
     end
 
-    self:Print('PLAYER_TARGET_CHANGED')
-
     -- Really want to check that the target is meaningful here
     if UnitIsDead('target') or UnitEffectiveLevel('target') > 0 then
-        self:Print('Trivial target, ignoring.')
+        return
     end
 
     local npcName = UnitName('target')
-    self:Print('Target name: ' .. tostring(npcName))
 
     local instance = select(8, GetInstanceInfo())
-    self:Print('Instance ID: ' .. tostring(instance))
 
     if self.db.specByNPC[npcName] and
        self.db.specByNPC[npcName].instance == instance then
