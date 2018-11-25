@@ -25,18 +25,30 @@ function LiteLootSpec:MergeDefaults()
     end
 end
 
+-- EJ instances arent the same as the returns from GetInstanceInfo()
+function LiteLootSpec:GetCurrentEJInstance()
+    local mapID = C_Map.GetBestMapForUnit('player')
+    local instance = mapID and EJ_GetInstanceForMap(mapID) or 0
+    return instance
+end
+
+function LiteLootSpec:GetCurrentDifficulty()
+    local difficulty = select(3, GetInstanceInfo())
+    return self.difficultyTexts[difficulty] or ALL
+end
+
 function LiteLootSpec:GetBossInfoFromEJ()
     if EncounterJournal and
        EncounterJournal:IsVisible() and
        EncounterJournal.encounterID then
         local _, name = EJ_GetCreatureInfo(1)
-        local hasDifficulty = select(9, EJ_GetInstanceInfo())
-        local instance, difficulty = 0, 0
+        local mapID, _, hasDifficulty = select(7, EJ_GetInstanceInfo())
+        local instance, diffID = 0, 0
         if hasDifficulty then
-            instance = select(6, EJ_GetEncounterInfo(EncounterJournal.encounterID))
-            difficulty = EJ_GetDifficulty()
+            instance = mapID and EJ_GetInstanceForMap(mapID) or 0
+            diffID = EJ_GetDifficulty()
         end
-        return name, instance, difficulty
+        return name, instance, self.difficultyTexts[diffID] or ALL
     end
 end
 
@@ -122,6 +134,10 @@ function LiteLootSpec:PLAYER_LOGIN()
 
     self.db.info = { UnitFullName('player') }
 
+    -- Putting this as a dependency makes it fail as it tries to load
+    -- before GetSpecialization returns anything.
+    LoadAddOn("Blizzard_EncounterJournal")
+
     self.difficultyTexts = { }
     for k,v in pairs(_G) do
         if type(v) == 'string' then
@@ -132,7 +148,7 @@ function LiteLootSpec:PLAYER_LOGIN()
             elseif k:match('^RAID_DIFFICULTY[0-9]') then
                 local info = UnitPopupButtons[k]
                 if info then
-                    self.difficultyTexts[info.difficultyID] = format('%s %s', info.text, RAID)
+                    self.difficultyTexts[info.difficultyID] = info.text
                 end
             end
         end
@@ -147,14 +163,14 @@ function LiteLootSpec:PLAYER_LOGIN()
 end
 
 function LiteLootSpec:Key(npcName, instance, difficulty)
-    return format('%s-%s-%s', npcName, instance, tostring(difficulty))
+    return format('%s-%s-%s', npcName, instance, difficulty or ALL)
 end
 
 function LiteLootSpec:Clear(npcName, instance, difficulty)
     local key = self:Key(npcName, instance, difficulty)
     self:Print('Clearing spec for %s (%s)',
             self:GetNPCText(npcName),
-            self:GetDifficultyText(difficulty)
+            difficulty
         )
     self.db.specByKey[key] = nil
 end
@@ -165,7 +181,7 @@ function LiteLootSpec:Set(npcName, instance, difficulty, spec)
             self:GetLootSpecText(spec),
             spec,
             self:GetNPCText(npcName),
-            self:GetDifficultyText(difficulty)
+            difficulty
         )
     self.db.specByKey[key] = {
             npcName = npcName,
@@ -189,7 +205,7 @@ function LiteLootSpec:Get(npcName, instance, difficulty)
     local key 
 
     -- First look for an ALL difficulties key
-    for d in pairs({ nil, difficulty }) do
+    for d in pairs({ ALL, difficulty }) do
         key = self:Key(npcName, instance, d)
         if self.db.specByKey[key] then
             return self.db.specByKey[npcName].spec
@@ -213,10 +229,8 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
     end
 
     local npcName = UnitName('target')
-
-    local difficulty = select(3, GetInstanceInfo())
-    local mapID = C_Map.GetBestMapForUnit("player")
-    local instance = mapID and EJ_GetInstanceForMap(mapID) or 0
+    local difficulty = self:GetCurrentDifficulty()
+    local instance = self:GetCurrentEJInstance()
 
     self.wantedLootSpec = self:Get(npcName, instance, difficulty)
     self:ApplyWantedSpec()
@@ -254,17 +268,13 @@ end
 function LiteLootSpec:ParseDifficultyArg(arg)
     local n = tonumber(arg)
     if n then
-        if n == 0 then
-            return nil
-        else
-            return n
-        end
+        return self.difficultyTexts[n] or ALL
     end
     
     local pattern = '^' .. arg:lower()
     for k,v in pairs(self.difficultyTexts) do
         if v:lower():match(pattern) then
-            return k
+            return v
         end
     end
 end
@@ -273,7 +283,8 @@ function LiteLootSpec:GetBossInfo()
     local npc, instance, difficulty = self:GetBossInfoFromEJ()
     if not npc then
         npc = UnitName('target')
-        difficulty,_,_,_,_,_,instance = select(3, GetInstanceInfo())
+        difficulty = self:GetCurrentDifficulty()
+        instance = self:GetCurrentEJInstance()
     end
     return npc, instance, difficulty
 end
@@ -283,17 +294,19 @@ function LiteLootSpec:SlashCommandHandler(argstr)
     if cmd == 'list' then
         self:Print('Current settings:')
         for key, info in self:Iterate() do
-            self:Print('  %s (%s) -> %s',
-                   self:GetNPCText(info.npcName),
-                   self:GetDifficultyText(info.difficulty),
-                   self:GetLootSpecText(info.spec)
+            self:Print('  %s (%s instance %d) -> %s',
+                    self:GetNPCText(info.npcName),
+                    info.difficulty,
+                    info.instance,
+                    self:GetLootSpecText(info.spec)
                 )
         end
     elseif cmd == 'target' then
-        local npc, instance, difficulty = self:GetBossInfo()
-        self:Print('Target npc = %s (%s)',
-                self:GetNPCText(npc),
-                self:GetDifficultyText(difficulty)
+        local npcName, instance, difficulty = self:GetBossInfo()
+        self:Print('Target: %s (%s instance %d)',
+                self:GetNPCText(npcName),
+                difficulty,
+                instance
             )
     elseif cmd == 'clear' then
         local npc, instance, difficulty = self:GetBossInfo()
