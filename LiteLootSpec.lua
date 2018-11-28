@@ -205,10 +205,10 @@ function LiteLootSpec:Get(npcName, instance, difficulty)
     local key 
 
     -- First look for an ALL difficulties key
-    for d in pairs({ ALL, difficulty }) do
+    for _,d in ipairs({ ALL, difficulty }) do
         key = self:Key(npcName, instance, d)
         if self.db.specByKey[key] then
-            return self.db.specByKey[npcName].spec
+            return self.db.specByKey[key].spec
         end
     end
     return nil
@@ -233,6 +233,8 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
     local instance = self:GetCurrentEJInstance()
 
     self.wantedLootSpec = self:Get(npcName, instance, difficulty)
+    self:Print('self.wantedLootSpec = ' .. tostring(self.wantedLootSpec))
+
     self:ApplyWantedSpec()
 end
 
