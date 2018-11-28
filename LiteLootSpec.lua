@@ -111,17 +111,21 @@ function LiteLootSpec:ApplyWantedSpec()
     local curLootSpec = GetLootSpecialization() or 0
 
     local wantedLootSpec = self.wantedLootSpec or self.userSetLootSpec or 0
+    local wantedText = self:GetLootSpecText(wantedLootSpec)
 
     if wantedLootSpec == curLootSpec then
+        self:Message('LiteLootSpec\nLoot spec ' ..wantedText .. ' already set')
         return
     end
 
     if curLootSpec == 0 and wantedLootSpec == curSpec then
+        local curText = self:GetLootSpecText(0)
+        self:Message('LiteLootSpec\nLeaving ' .. curText)
         return
     end
 
     SetLootSpecialization(wantedLootSpec)
-    self:Message('Changing loot spec to ' .. self:GetLootSpecText(wantedLootSpec))
+    self:Message('LiteLootSpec\nLoot spec set to ' ..wantedText)
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
@@ -233,8 +237,6 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
     local instance = self:GetCurrentEJInstance()
 
     self.wantedLootSpec = self:Get(npcName, instance, difficulty)
-    self:Print('self.wantedLootSpec = ' .. tostring(self.wantedLootSpec))
-
     self:ApplyWantedSpec()
 end
 
