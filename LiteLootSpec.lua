@@ -99,7 +99,7 @@ end
 function LiteLootSpec:Message(...)
     self:Print(...)
     local txt = format(...)
-    UIErrorsFrame:AddMessage(txt, 0.1, 1.0, 0.1)
+    UIErrorsFrame:AddMessage('LiteLootSpec\n'..txt, 0.1, 1.0, 0.1)
 end
 
 function LiteLootSpec:ApplyWantedSpec()
@@ -114,18 +114,16 @@ function LiteLootSpec:ApplyWantedSpec()
     local wantedText = self:GetLootSpecText(wantedLootSpec)
 
     if wantedLootSpec == curLootSpec then
-        self:Message('LiteLootSpec\nLoot spec ' ..wantedText .. ' already set')
         return
     end
 
     if curLootSpec == 0 and wantedLootSpec == curSpec then
         local curText = self:GetLootSpecText(0)
-        self:Message('LiteLootSpec\nLeaving ' .. curText)
         return
     end
 
     SetLootSpecialization(wantedLootSpec)
-    self:Message('LiteLootSpec\nLoot spec set to ' ..wantedText)
+    self:Message('Loot spec set to ' ..wantedText)
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
@@ -159,8 +157,8 @@ function LiteLootSpec:PLAYER_LOGIN()
     end
 
     self.wantedLootSpec = nil
-    -- Is this necessary? PLAYER_LOOT_SPEC_UPDATED is probably fired early
-    self.userSetLootSpec = GetLootSpecialization()
+    self:PLAYER_LOOT_SPEC_UPDATED()
+
     self:RegisterEvent('PLAYER_TARGET_CHANGED')
     self:RegisterEvent('PLAYER_LOOT_SPEC_UPDATED')
     self:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
