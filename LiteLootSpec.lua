@@ -193,13 +193,31 @@ function LiteLootSpec:Set(npcName, instance, difficulty, spec)
         }
 end
 
+local function keySort(a, b)
+    if a.instance < b.instance then
+        return true
+    elseif a.npcName < b.npcName then
+        return true
+    elseif a.difficulty < b.dificulty then
+        return true
+    else
+        return false
+    end
+end
+
 function LiteLootSpec:Iterate()
     local keys = {}
-    for k,v in pairs(self.db.specByKey) do table.insert(keys, k) end
+
+    for k,v in pairs(self.db.specByKey) do
+        table.insert(keys, k)
+    end
+
+    table.sort(keys, keySort)
+
     local i = 0
     return function ()
             i = i + 1
-            return keys[i], self.db.specByKey[keys[i]]
+            return i, self.db.specByKey[keys[i]]
         end
 end
 
@@ -217,7 +235,7 @@ function LiteLootSpec:Get(npcName, instance, difficulty)
 end
 
 function LiteLootSpec:Wipe()
-        wipe(self.db.specByKey)
+    wipe(self.db.specByKey)
 end
 
 function LiteLootSpec:PLAYER_TARGET_CHANGED()
@@ -295,8 +313,9 @@ function LiteLootSpec:SlashCommandHandler(argstr)
     local cmd, arg1 = strsplit(' ', strlower(argstr))
     if cmd == 'list' then
         self:Print('Current settings:')
-        for key, info in self:Iterate() do
-            self:Print('  %s (%s instance %d) -> %s',
+        for i, info in self:Iterate() do
+            self:Print('% 2d %s (%s instance %d) -> %s',
+                    i,
                     self:GetNPCText(info.npcName),
                     info.difficulty,
                     info.instance,
@@ -311,12 +330,20 @@ function LiteLootSpec:SlashCommandHandler(argstr)
                 instance
             )
     elseif cmd == 'clear' then
-        local npc, instance, difficulty = self:GetBossInfo()
-        if npc then
-            if arg1 then
-                difficulty = self:ParseDifficultyArg(arg1)
+        if arg1 then
+            arg1 = tonumber(arg1)
+            for i, info in self:Iterate() do
+                if arg1 == i then
+                    self:Clear(info.npcName, info.instance, info.difficulty)
+                end
             end
-            self:Clear(npc, instance, difficulty)
+        else
+            local npc, instance, difficulty = self:GetBossInfo()
+            if npc then
+                self:Clear(npc, instance, difficulty)
+            else
+                self:Print('Target a boss or have it open in the Encounter Journal.')
+            end
         end
     elseif cmd == 'set' and arg1 then
         local npc, instance, difficulty = self:GetBossInfo()
