@@ -226,7 +226,12 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
     end
 
     -- Really want to check that the target is meaningful here
-    if UnitIsDead('target') or UnitEffectiveLevel('target') > 0 then
+    if UnitIsDead('target') then
+        return
+    end
+
+    local targetLevel = UnitEffectiveLevel('target')
+    if targetLevel < 0 or targetLevel - UnitLevel('player') < 2 then
         return
     end
 
