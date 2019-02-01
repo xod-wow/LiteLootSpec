@@ -196,10 +196,13 @@ end
 function LiteLootSpec:Iterate()
     local keys = {}
     for k,v in pairs(self.db.specByKey) do table.insert(keys, k) end
+    table.sort(keys)
     local i = 0
     return function ()
             i = i + 1
-            return keys[i], self.db.specByKey[keys[i]]
+            if keys[i] then
+                return i, self.db.specByKey[keys[i]]
+            end
         end
 end
 
@@ -300,8 +303,9 @@ function LiteLootSpec:SlashCommandHandler(argstr)
     local cmd, arg1 = strsplit(' ', strlower(argstr))
     if cmd == 'list' then
         self:Print('Current settings:')
-        for key, info in self:Iterate() do
-            self:Print('  %s (%s instance %d) -> %s',
+        for i, info in self:Iterate() do
+            self:Print('% 2d.  %s (%s instance %d) -> %s',
+                    i,
                     self:GetNPCText(info.npcName),
                     info.difficulty,
                     info.instance,
