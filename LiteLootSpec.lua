@@ -234,7 +234,9 @@ function LiteLootSpec:PLAYER_TARGET_CHANGED()
     end
 
     local targetLevel = UnitEffectiveLevel('target')
-    if targetLevel < 0 or targetLevel - UnitLevel('player') < 2 then
+    local playerLevel = UnitEffectiveLevel('player')
+
+    if targetLevel > 0 and targetLevel - playerLevel < 2 then
         return
     end
 
