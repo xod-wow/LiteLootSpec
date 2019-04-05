@@ -39,11 +39,12 @@ local function tStrip(t, ref)
 end
 
 function LiteLootSpec:LoadSettings()
+    local dbKey = UnitGUID('player')
     LiteLootSpecDB = LiteLootSpecDB or { }
     LiteLootSpecDB[dbKey] = LiteLootSpecDB[dbKey] or {}
     self.db = LiteLootSpecDB[dbKey]
     tMerge(self.db, defaults)
-    self.db.info = { UnitFullName('player') },
+    self.db.info = { UnitFullName('player') }
 end
 
 function LiteLootSpec:CleanSettings()
@@ -191,7 +192,7 @@ function LiteLootSpec:PLAYER_LOGIN()
     self:RegisterEvent('PLAYER_LOGOUT')
 end
 
-function self:PLAYER_LOGOUT()
+function LiteLootSpec:PLAYER_LOGOUT()
     self:CleanSettings()
 end
 
