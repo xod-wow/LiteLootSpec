@@ -6,22 +6,51 @@ LiteLootSpec = CreateFrame('Frame')
 LiteLootSpec:RegisterEvent('PLAYER_LOGIN')
 LiteLootSpec:SetScript('OnEvent',
     function (self, e, ...)
-        if self[e] then self[e](self, e, ...) end
+        if self[e] then self[e](self, ...) end
     end)
 
 local defaults = {
     specByKey = { },
 }
 
-function LiteLootSpec:MergeDefaults()
-    for k,v in pairs(defaults) do
-        if not self.db[k] then
-            if type(v) == 'table' then
-                self.db[k] = CopyTable(v)
-            else
-                self.db[k] = v
+local function tMerge(t, ref)
+    for k,v in pairs(ref) do
+        if type(v) == 'table' then
+            t[k] = t[k] or {}
+            tMerge(t[k], v)
+        elseif t[k] ~= v then
+            t[k] = v
+        end
+    end
+end
+
+local function tStrip(t, ref)
+    for k in pairs(t) do
+        if t[k] == ref[k] then
+            t[k] = nil
+        elseif type(t[k]) == 'table' then
+            if next(t[k]) == nil then
+                t[k] = nil
+            elseif type(ref[k]) == 'table' then
+                tStrip(t[k], ref[k])
             end
         end
+    end
+end
+
+function LiteLootSpec:LoadSettings()
+    LiteLootSpecDB = LiteLootSpecDB or { }
+    LiteLootSpecDB[dbKey] = LiteLootSpecDB[dbKey] or {}
+    self.db = LiteLootSpecDB[dbKey]
+    tMerge(self.db, defaults)
+    self.db.info = { UnitFullName('player') },
+end
+
+function LiteLootSpec:CleanSettings()
+    tStrip(self.db, defaults)
+    if next(self.db) == 'info' and next(self.db, 'info') == nil then
+        local dbKey = UnitGUID('player')
+        LiteLootSpecDB[dbKey] = nil
     end
 end
 
@@ -127,14 +156,7 @@ function LiteLootSpec:ApplyWantedSpec()
 end
 
 function LiteLootSpec:PLAYER_LOGIN()
-    local key = UnitGUID('player')
-
-    LiteLootSpecDB = LiteLootSpecDB or { }
-    LiteLootSpecDB[key] = LiteLootSpecDB[key] or {}
-    self.db = LiteLootSpecDB[key]
-    self:MergeDefaults()
-
-    self.db.info = { UnitFullName('player') }
+    self:LoadSettings()
 
     -- Putting this as a dependency makes it fail as it tries to load
     -- before GetSpecialization returns anything.
@@ -160,8 +182,17 @@ function LiteLootSpec:PLAYER_LOGIN()
     self:PLAYER_LOOT_SPEC_UPDATED()
 
     self:RegisterEvent('PLAYER_TARGET_CHANGED')
+    self:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
     self:RegisterEvent('PLAYER_LOOT_SPEC_UPDATED')
     self:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+    self:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+
+    -- Remove the defaults from what we save
+    self:RegisterEvent('PLAYER_LOGOUT')
+end
+
+function self:PLAYER_LOGOUT()
+    self:CleanSettings()
 end
 
 function LiteLootSpec:Key(npcName, instance, difficulty)
@@ -220,32 +251,46 @@ function LiteLootSpec:Get(npcName, instance, difficulty)
 end
 
 function LiteLootSpec:Wipe()
-        wipe(self.db.specByKey)
+    wipe(self.db.specByKey)
 end
 
-function LiteLootSpec:PLAYER_TARGET_CHANGED()
-    if not UnitExists('target') then
+function LiteLootSpec:CheckUnit(unit)
+    if not UnitExists(unit) then
         return
     end
 
-    -- Really want to check that the target is meaningful here
-    if UnitIsDead('target') then
+    -- Really want to check that the unit is meaningful here
+    if UnitIsDead(unit) then
         return
     end
 
-    local targetLevel = UnitEffectiveLevel('target')
+    local targetLevel = UnitEffectiveLevel(unit)
     local playerLevel = UnitEffectiveLevel('player')
 
     if targetLevel > 0 and targetLevel - playerLevel < 2 then
         return
     end
 
-    local npcName = UnitName('target')
+    local npcName = UnitName(unit)
     local difficulty = self:GetCurrentDifficulty()
     local instance = self:GetCurrentEJInstance()
 
     self.wantedLootSpec = self:Get(npcName, instance, difficulty)
     self:ApplyWantedSpec()
+end
+
+function LiteLootSpec:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
+    for i = 1, MAX_BOSS_FRAMES do
+        self:CheckUnit("boss"..i)
+    end
+end
+
+function LiteLootSpec:PLAYER_TARGET_CHANGED()
+    self:CheckUnit('target')
+end
+
+function LiteLootSpec:UPDATE_MOUSEOVER_UNIT()
+    self:CheckUnit('mouseover')
 end
 
 function LiteLootSpec:PLAYER_SPECIALIZATION_CHANGED()
