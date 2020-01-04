@@ -114,16 +114,8 @@ function LiteLootSpec:GetNPCText(name)
 end
 
 function LiteLootSpec:Print(...)
-    local cur = DEFAULT_CHAT_FRAME
-    for i = 1,NUM_CHAT_WINDOWS do
-        local f = _G['ChatFrame'..i]
-        if f and f:IsVisible() then
-            cur = f
-            break
-        end
-    end
-
-    cur:AddMessage('|cff00ff00LiteLootSpec:|r ' .. format(...))
+    local f = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
+    f:AddMessage('|cff00ff00LiteLootSpec:|r ' .. format(...))
 end
 
 function LiteLootSpec:Message(...)
