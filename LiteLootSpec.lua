@@ -1,5 +1,22 @@
 --[[----------------------------------------------------------------------------
+
   LiteLootSpec
+
+  Copyright 2019-2020 Mike Battersby
+
+  LiteLootSpec is free software: you can redistribute it and/or modify it under
+  the terms of the GNU General Public License, version 2, as published by
+  the Free Software Foundation.
+
+  LiteLootSpec is distributed in the hope that it will be useful, but WITHOUT
+  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  more details.
+
+  The file LICENSE.txt included with LiteLootSpec contains a copy of the
+  license. If the LICENSE.txt file is missing, you can find a copy at
+  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
 ----------------------------------------------------------------------------]]--
 
 LiteLootSpec = CreateFrame('Frame')
